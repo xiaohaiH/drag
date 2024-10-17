@@ -1,0 +1,72 @@
+name: copy example
+# 在 master 分支推送代码的时候执行该脚本
+on:
+    push:
+        branches:
+            - master
+# 授予写权限
+permissions:
+    contents: write
+# 定义任务
+jobs:
+    # 任务一
+    build-and-deploy:
+        # 运行环境
+        runs-on: ubuntu-latest
+        steps:
+            # 第一步: 定义名称并使用插件(检出仓库代码)
+            - name: get code
+              uses: actions/checkout@v2
+
+            # 第二步: 安装 pnpm
+            - name: Install pnpm
+              uses: pnpm/action-setup@v2
+              with:
+                  version: 8
+
+            # # 第三步: 设置 node 版本
+            # - name: Set node version to 18
+            #   uses: actions/setup-node@v2
+            #   with:
+            #       node-version: 18
+            #       cache: 'pnpm'
+
+            - run: pnpm install
+
+            - name: build
+              run: pnpm build
+
+            - name: copy dist2
+              uses: JamesIves/github-pages-deploy-action@v4
+              with:
+                  folder: ./dist2
+                  target-folder: .
+                  clean: true
+
+    # # 任务二
+    # task2:
+    #     # 运行环境
+    #     runs-on: ubuntu-latest
+    #     steps:
+    #         # 第一步: 定义名称并使用插件(检出仓库代码)
+    #         - name: Checkout 🛎️
+    #           # 使用插件
+    #           uses: actions/checkout@v4
+
+    #         # 第二步: 打包 example
+    #         - name: Install and Build
+    #           run: |
+    #               npm install
+    #               npm run build
+
+    #         # 第三步: 使用插件将文件复制到 github-pages 中
+    #         - name: Deploy 🚀
+    #           uses: JamesIves/github-pages-deploy-action@v4
+    #           with:
+    #               # 要操作的文件
+    #               folder: example/static
+    #               # 复制到指定文件夹(可省略)(.: 根目录, ~: 绝对路径)
+    #               target-folder: .
+    #               clean: true
+    #               clean-exclude: |
+    #                   *.html
