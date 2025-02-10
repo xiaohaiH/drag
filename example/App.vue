@@ -1,8 +1,8 @@
 <template>
-    <div class="size-full flex">
-        <Directive class="w-50%"></Directive>
-        <div class="bg-gray w-1px"></div>
-        <Function class="w-50%"></Function>
+    <div class="size-full flex  origin-lt">
+        <Directive class="w-50%" />
+        <div class="bg-gray w-1px" />
+        <Function class="w-50%  origin-lt" />
     </div>
 </template>
 

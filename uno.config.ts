@@ -9,7 +9,7 @@ import {
     transformerVariantGroup,
 } from 'unocss';
 
-const remRE = /(-?[\.\d]+)rem/g;
+const remRE = /(-?[.\d]+)rem/g;
 
 /** 定义 unocss 配置 */
 export default defineConfig({
@@ -29,8 +29,8 @@ export default defineConfig({
                 if (value && typeof value === 'string' && !remRE.test(util.selector) && remRE.test(value)) {
                     i[1] = value.replace(remRE, (_, p1) => `${p1 * 4}rem`);
                     // 还原 line-height 真实值
-                    i[1] =
-                        i[0] === 'line-height'
+                    i[1]
+                        = i[0] === 'line-height'
                             ? Number(value.slice(0, -3)) * 4
                             : value.replace(remRE, (_, p1) => `${p1 * 4}rem`);
                 }
