@@ -1,3 +1,4 @@
+import { PluginSortLevel } from '../../src/config';
 import { getBoundingClientRect, getParent, getSize } from '../../src/utils/assist';
 import type { DragCore } from '../core/index';
 import type { EventOption, PluginOption } from '../core/types';
@@ -10,6 +11,7 @@ export function Scrolling(): PluginOption {
     let cacheInfo: [HTMLElement, { clientX: number; clientY: number; x: number; y: number; scrollContainer: HTMLElement; scrollContainerRect: DOMRect }][] = [];
     return {
         name: 'Scrolling',
+        sort: PluginSortLevel.sky,
         install(ins) {
             let timer = 0;
             /** 滚动 */

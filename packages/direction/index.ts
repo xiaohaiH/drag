@@ -1,3 +1,4 @@
+import { PluginSortLevel } from '../../src/config';
 import type { PluginOption } from '../core/types';
 
 /**
@@ -6,6 +7,7 @@ import type { PluginOption } from '../core/types';
 export function Direction(): PluginOption {
     return {
         name: 'Direction',
+        sort: PluginSortLevel.sky + 10,
         install(ins) {
             ins.on('axisBeforeUpdate', (option, ins) => {
                 if (!(ins.status && ins.option.direction)) return;

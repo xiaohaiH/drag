@@ -1,3 +1,4 @@
+import { PluginSortLevel } from '../../src/config';
 import { getParent, getSize } from '../../src/utils/assist';
 import type { PluginOption } from '../core/types';
 
@@ -7,6 +8,7 @@ import type { PluginOption } from '../core/types';
 export function BoundaryLimit(): PluginOption {
     return {
         name: 'BoundaryLimit',
+        sort: PluginSortLevel.sky + 30,
         install(ins) {
             let cacheInfo: [HTMLElement, Record<'scrollWidth' | 'scrollHeight', number>][] = [];
             ins.on('touchStart', (option) => {

@@ -1,3 +1,4 @@
+import { PluginSortLevel } from '../../src/config';
 import { addElementClass, getBoundingClientRect, getElementStyle, getParent, getSize } from '../../src/utils/assist';
 import type { EventOption, PluginOption } from '../core/types';
 import type { InsetShadowFollowOption, ShadowFollowOption } from './types';
@@ -10,6 +11,7 @@ export function ShadowFollow(): PluginOption {
     let cacheInfo: [HTMLElement, { dom: HTMLElement; x: number; y: number }][] = [];
     return {
         name: 'ShadowFollow',
+        sort: PluginSortLevel.thermosphere,
         install(ins) {
             ins.on('touchStart', (option, ins) => {
                 if (!(ins.status && ins.option.shadowFollow)) return;

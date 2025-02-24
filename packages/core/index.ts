@@ -28,9 +28,7 @@ export class DragCore {
     /** 拖拽的节点信息 */
     operationDom: Omit<EventOption, 'native'>[] = [];
     /** 启用状态 */
-    status = false;
-    /** 防止重复执行 run 方法 */
-    running = false;
+    status = true;
     /** 元素比例, 当缩放时, 此处会记录缩放比例[宽度百分比, 高度百分比] */
     ratio: [widthRatio: number, heightRatio: number] = [1, 1];
 
@@ -47,46 +45,38 @@ export class DragCore {
         this.emit = this.emit.bind(this);
 
         option && Object.assign(this.option, option);
-    }
-
-    /** 开始执行并运行插件 */
-    run() {
-        if (this.running) return this;
-        this.running = true;
-        const { option } = this;
-        option.target && this.formatDom();
-        this.enabled();
-        this.plugins.forEach((plugin) => {
-            const { run, get, stop } = this.receiveScopeEvents();
-            run();
-            plugin.install(this);
-            stop();
-            plugin.events = get();
-        });
-        return this;
-    }
-
-    /** 停止拖拽并销毁插件监听的事件 */
-    stop() {
-        this.running = false;
-        this.disabled();
-        this.plugins.forEach((item) => {
-            this.offEvents(item.events);
-        });
-        return this;
+        this.option.disabled && (this.status = false);
+        this.option.target && this.formatDom();
     }
 
     /** 更新参数 */
-    updateOption(option: Partial<DragCoreOption>) {
+    updateOption(option: Partial<Omit<DragCoreOption, 'disabled'>>) {
         Object.assign(this.option, option);
         (option.target || (this.option.target && option.handle)) && this.formatDom();
         return this;
     }
 
-    /** 格式化 dom */
+    /** 启用拖拽 */
+    enabled() {
+        this.status = true;
+        this.addEventsListener();
+        return this;
+    }
+
+    /** 禁用拖拽 */
+    disabled() {
+        this.status = false;
+        setCursor(this._cursor);
+        this._cursor = '';
+        this.isTouching = this.isEntering = false;
+        this.removeEventsListener();
+        return this;
+    }
+
+    /** 格式化拖拽元素 */
     formatDom() {
         const { target, handle } = this.option;
-        this.removeDomListeners();
+        this.removeEventsListener();
         this.operationDom = [];
         const doms = parseDOM(target, document) || [];
         doms.forEach((targetDom) => {
@@ -103,29 +93,12 @@ export class DragCore {
                 } as EventOption),
             );
         });
-        this.status && this.enabled();
-        return this;
-    }
-
-    /** 启用拖拽 */
-    enabled() {
-        this.status = true;
-        this.addDomListeners();
-        return this;
-    }
-
-    /** 禁用拖拽 */
-    disabled() {
-        this.status = false;
-        setCursor(this._cursor);
-        this._cursor = '';
-        this.isTouching = this.isEntering = false;
-        this.removeDomListeners();
+        this.status && this.addEventsListener();
         return this;
     }
 
     /** 增加元素监听的相关事件 */
-    addDomListeners() {
+    addEventsListener() {
         this.operationDom.forEach(({ handle }) => {
             // eslint-disable-next-line ts/unbound-method
             handle.addEventListener(downEventName, this.touchstart);
@@ -139,7 +112,7 @@ export class DragCore {
     }
 
     /** 移除元素监听的相关事件 */
-    removeDomListeners() {
+    removeEventsListener() {
         this.operationDom.forEach((info) => {
             info.dragging && this.touchend(info, {} as MouseEvent);
             // eslint-disable-next-line ts/unbound-method
@@ -168,7 +141,7 @@ export class DragCore {
         const top = isAbsolute ? info.target.offsetTop : 0;
         // const { x, y } = getBoundingClientRect(info.target, 'offset');
         const { x, y } = info.target.getBoundingClientRect();
-        this.ratio = this.getRatioByElement(info.target);
+        this.ratio = DragCore.getRatioByElement(info.target);
         const [widthRatio, heightRatio] = this.ratio;
 
         info.dragging = true;
@@ -327,6 +300,17 @@ export class DragCore {
         return this.on(eventName, callback, true);
     }
 
+    /** 重新绑定指定事件集合内的事件 */
+    rebindEvents(eventsObj: typeof this.events | undefined) {
+        if (!eventsObj) return;
+        Object.entries(eventsObj).forEach(([eventName, cbs]) => {
+            cbs.forEach(([cb, isOnce]) => {
+                this.off(eventName as DragCoreEventsNames, cb);
+                this.on(eventName as DragCoreEventsNames, cb, isOnce);
+            });
+        });
+    }
+
     /** 移除监听事件 */
     off<EventName extends DragCoreEventsNames>(eventName: EventName, callback?: DragCoreEvents[EventName]) {
         this.eventsScope.forEach(
@@ -359,7 +343,7 @@ export class DragCore {
     }
 
     /** 收集新增的事件 */
-    receiveScopeEvents() {
+    getFragmentEvents() {
         const _eventsScope: (typeof this.eventsScope)[number] = {};
         return {
             get: () => _eventsScope,
@@ -374,7 +358,7 @@ export class DragCore {
     }
 
     /** 销毁指定事件 */
-    offEvents(events: PluginOption['events'] | undefined) {
+    disposeEvents(events: PluginOption['events'] | undefined) {
         if (!events) return;
         Object.entries(events).forEach(([k, o]) => o.forEach((v) => this.off(k as DragCoreEventsNames, v[0])));
     }
@@ -385,30 +369,47 @@ export class DragCore {
     use(option: () => PluginOption) {
         const _option = option();
         if (!this.plugins.find((v) => v.name === _option.name)) {
+            const { run, get, stop } = this.getFragmentEvents();
             this.plugins.push(_option);
-            this.plugins.sort((a, b) => (b.sort || 0) - (a.sort || 0));
+            run();
+            _option.install(this);
+            stop();
+            _option.events = get();
+
+            if (this.plugins.length < 2) return this;
+            this.plugins.sort((a, b) => (a.sort || 0) - (b.sort || 0));
+            this.plugins.forEach((o) => this.rebindEvents(o.events));
         }
         return this;
     }
 
     /** 移除插件 */
-    unuse(name: string) {
-        const index = this.plugins.findIndex((v) => v.name === name);
+    unuse(name: string | number) {
+        const index = typeof name === 'string' ? this.plugins.findIndex((v) => v.name === name) : name;
         if (index !== -1) {
             const [item] = this.plugins.splice(index, 1);
-            this.offEvents(item.events);
+            if (item) {
+                item.uninstall?.(this);
+                this.disposeEvents(item.events);
+            }
         }
         return this;
     }
 
     /** 销毁实例 */
     destroyed() {
-        this.stop();
+        this.disabled();
+        this.plugins.forEach((item) => {
+            item.uninstall?.(this);
+            this.disposeEvents(item.events);
+            delete item.events;
+        });
+        this.eventsScope = [];
     }
 
     // 辅助函数
     /** 获取元素的比例 */
-    getRatioByElement(dom: HTMLElement): [number, number] {
+    static getRatioByElement(dom: HTMLElement): [number, number] {
         const { width, height } = dom.getBoundingClientRect();
         const { offsetWidth, offsetHeight } = dom;
         return [offsetWidth / width, offsetHeight / height];

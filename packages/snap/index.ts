@@ -1,3 +1,4 @@
+import { PluginSortLevel } from '../../src/config';
 import { getBoundingClientRect, getParent, getSize } from '../../src/utils/assist';
 import type { PluginOption } from '../core/types';
 
@@ -16,6 +17,7 @@ const xySizeMap = { x: 'width', y: 'height' } as const;
 export function Snap(): PluginOption {
     return {
         name: 'Snap',
+        sort: PluginSortLevel.sky + 20,
         install(ins) {
             let cacheInfo: [HTMLElement, Record<'scrollWidth' | 'scrollHeight', number>][] = [];
             ins.on('touchStart', (option) => {
@@ -54,7 +56,6 @@ export function Snap(): PluginOption {
                             option.y = pSize.height - size.height;
                         }
                     }
-                    option.setPosition(option, option.target);
                 })
                 .on('touchEnd', (option, ins) => {
                     if (!ins.status) return;

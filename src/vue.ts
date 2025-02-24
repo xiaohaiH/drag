@@ -12,8 +12,8 @@ export function vDragsFunc(option: VDragCoreOption) {
     /** 初始化拖拽 */
     function init() {
         destroy();
-        if (option.disabled) return;
-        dragIns.value = drag(option).run();
+        // if (option.disabled) return;
+        dragIns.value = drag({ ...option, disabled: unref(option.disabled) });
         return destroy;
     }
     /** 销毁拖拽 */

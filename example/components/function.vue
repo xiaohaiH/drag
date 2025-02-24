@@ -80,7 +80,7 @@ onMounted(() => {
         // virtualAxis: true,
         shadowFollow: true,
         classActivated: 'z-111',
-    }).run();
+    });
     let isOverDropZone = false;
     (document.querySelector('.drop-zone') as HTMLElement)?.addEventListener('mouseenter', () => {
         isOverDropZone = true;

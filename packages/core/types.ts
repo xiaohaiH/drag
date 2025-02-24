@@ -41,6 +41,8 @@ export interface DragCoreOption
      * @default move
      */
     cursorMoving?: string;
+    /** 初始化时是否禁用 */
+    disabled?: boolean;
     /** 根据状态获取指针形状 */
     getCursor?: (
         type: 'over' | 'out' | 'down' | 'up' | 'moving',
@@ -152,7 +154,8 @@ export interface PluginOption {
     sort?: number;
     /** 内部监听的事件(异步监听的事件未收集, 需插件内部主动解除) - 供拖拽内部使用 */
     events?: Record<string, [cb: (...args: any[]) => void, once?: boolean][]>;
-    /** 运行插件的方法 */
+    /** 安装插件时调用的方法 */
     install: (ins: DragCore) => void;
+    /** 卸载插件时调用的方法 */
     uninstall?: (ins: DragCore) => void;
 }
