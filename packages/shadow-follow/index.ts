@@ -23,7 +23,9 @@ export function ShadowFollow(): PluginOption {
                 const cloneDom = _opt.createDom(_opt, option) as HTMLElement;
                 const initialAxis = { x: 0, y: 0 };
                 if (pluginOption.fixed) {
-                    const rect = getBoundingClientRect(option.target, 'offset');
+                    // #fix 当处于固定定位时, 应取屏幕左上角
+                    // const rect = getBoundingClientRect(option.target, 'offset');
+                    const rect = option.target.getBoundingClientRect();
                     initialAxis.x = rect.x;
                     initialAxis.y = rect.y;
                     Object.assign(cloneDom.style, { left: `${rect.x - option.ml}px`, top: `${rect.y - option.mt}px` });
