@@ -301,7 +301,7 @@ export class DragCore {
     }
 
     /** 重新绑定指定事件集合内的事件 */
-    rebindEvents(eventsObj: typeof this.events | undefined) {
+    rebindEvents(eventsObj: DragCore['events'] | undefined) {
         if (!eventsObj) return;
         Object.entries(eventsObj).forEach(([eventName, cbs]) => {
             cbs.forEach(([cb, isOnce]) => {
@@ -344,7 +344,7 @@ export class DragCore {
 
     /** 收集新增的事件 */
     getFragmentEvents() {
-        const _eventsScope: (typeof this.eventsScope)[number] = {};
+        const _eventsScope: (DragCore['eventsScope'])[number] = {};
         return {
             get: () => _eventsScope,
             run: () => {
