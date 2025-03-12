@@ -7,12 +7,17 @@ import type { SnapOption } from '../snap/types';
 import type { DragCore } from './index';
 
 /** 元素拖拽的配置项 */
-export interface DragCoreOption
-    extends BoundaryLimitOption,
-    DirectionOption,
-    SnapOption,
-    ScrollingOption,
-    ShadowFollowOption {
+export interface DragCoreOption {
+    /** 范围限制配置项 */
+    boundaryLimitOptions?: BoundaryLimitOption;
+    /** 方向限制配置项 */
+    directionOptions?: DirectionOption;
+    /** 吸边配置项 */
+    snapOptions?: SnapOption;
+    /** 滚动配置项 */
+    scrollingOptions?: ScrollingOption;
+    /** 虚影跟随配置项 */
+    shadowFollowOptions?: ShadowFollowOption;
     /** 拖拽元素 */
     target?: DOM;
     /** 拖拽元素句柄, 不传取拖拽元素本身 */

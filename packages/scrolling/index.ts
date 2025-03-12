@@ -1,5 +1,6 @@
 import { PluginSortLevel } from '../../src/config';
 import { getBoundingClientRect, getParent, getSize } from '../../src/utils/assist';
+import { getEnableStatus } from '../../src/utils/index';
 import type { DragCore } from '../core/index';
 import type { EventOption, PluginOption } from '../core/types';
 
@@ -16,11 +17,12 @@ export function Scrolling(): PluginOption {
             let timer = 0;
             /** 滚动 */
             function makeScroll(option: EventOption, ins: DragCore) {
-                if (!ins.status) return;
+                if (!(ins.status && getEnableStatus(ins.option.scrollingOptions))) return;
+                const pluginOption = ins.option.scrollingOptions!;
                 const item = cacheInfo.find((v) => v[0] === option.target);
                 if (!item) return;
                 const [widthRatio, heightRatio] = ins.ratio;
-                const { scrollThreshold = 40, scrollSpeed = 10, scrollOption } = ins.option;
+                const { threshold = 40, speed = 10, scrollOption } = pluginOption;
                 const _scrollOption: ScrollToOptions = { ...scrollOption };
                 const {
                     scrollWidth,
@@ -39,18 +41,18 @@ export function Scrolling(): PluginOption {
                 option.y = ((option.clientY - y - option.offsetInsetY) * heightRatio) + item[1].y;
 
                 /** x 轴需要滚动的距离 */
-                const xScrollNum = option.clientX - x < scrollThreshold
-                    ? scrollSpeed * -1
+                const xScrollNum = option.clientX - x < threshold
+                    ? speed * -1
                     // 由于存在滚动条, 所以不能取滚动容器的 offsetWidth, 且该值得改为真实的大小
-                    : (x + (clientWidth / widthRatio)) - option.clientX < scrollThreshold
-                            ? scrollSpeed
+                    : (x + (clientWidth / widthRatio)) - option.clientX < threshold
+                            ? speed
                             : 0;
                 /** y 轴需要滚动的距离 */
-                const yScrollNum = option.clientY - y < scrollThreshold
-                    ? scrollSpeed * -1
+                const yScrollNum = option.clientY - y < threshold
+                    ? speed * -1
                     // 由于存在滚动条, 所以不能取滚动容器的 offsetWidth, 且该值得改为真实的大小
-                    : y + (clientHeight / heightRatio) - option.clientY < scrollThreshold
-                        ? scrollSpeed
+                    : y + (clientHeight / heightRatio) - option.clientY < threshold
+                        ? speed
                         : 0;
 
                 if (xScrollNum) {
@@ -77,9 +79,8 @@ export function Scrolling(): PluginOption {
             }
             /** 轮询检测翻页 */
             function pollingDetection(option: EventOption, ins: DragCore) {
-                if (!ins.status) return;
-                if (!ins.option.autoScrollAtEdge) return;
-                const { scrollMs = 100 } = ins.option;
+                if (!(ins.status && getEnableStatus(ins.option.scrollingOptions))) return;
+                const { scrollMs = 100 } = ins.option.scrollingOptions!;
                 stopPollingDetection();
                 makeScroll(option, ins);
                 timer = setInterval(makeScroll, scrollMs, option, ins) as unknown as number;
@@ -90,7 +91,9 @@ export function Scrolling(): PluginOption {
             }
             ins
                 .on('touchStart', (option, ins) => {
-                    const { scrollContainer = getParent(option.target) } = ins.option;
+                    if (!(ins.status && getEnableStatus(ins.option.scrollingOptions))) return;
+                    const { container } = ins.option.scrollingOptions!;
+                    const scrollContainer = typeof container === 'function' ? container(option) : container || getParent(option.target);
                     let item = cacheInfo.find((v) => v[0] === option.target);
                     if (!item) cacheInfo.push((item = [option.target, { clientX: 0, clientY: 0, x: 0, y: 0, scrollContainerRect: {} as DOMRect, scrollContainer: null as unknown as HTMLElement }]));
                     Object.assign(item[1], { clientX: option.clientX, clientY: option.clientY, x: scrollContainer.scrollLeft, y: scrollContainer.scrollTop, scrollContainerRect: scrollContainer.getBoundingClientRect(), scrollContainer });

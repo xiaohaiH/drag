@@ -1,5 +1,6 @@
 import { PluginSortLevel } from '../../src/config';
 import { getBoundingClientRect, getParent, getSize } from '../../src/utils/assist';
+import { getEnableStatus } from '../../src/utils/index';
 import type { PluginOption } from '../core/types';
 
 const xDirection = ['left', 'right', 'x'];
@@ -28,40 +29,42 @@ export function Snap(): PluginOption {
                 item[1].scrollHeight = rect.scrollHeight;
             })
                 .on('axisBeforeUpdate', (option, ins) => {
-                    if (!ins.status) return;
-                    if (!ins.option.snap || ins.option.forceSnap) return;
+                    if (!(ins.status && getEnableStatus(ins.option.snapOptions))) return;
+                    const pluginOption = ins.option.snapOptions!;
+                    if (!pluginOption.enable || pluginOption.forceSnap) return;
                     const item = cacheInfo.find((v) => v[0] === option.target);
                     if (!item) return;
-                    const { snapDirection, snapThreshold = 10 } = ins.option;
+                    const { orient, threshold = 10 } = pluginOption;
                     // // 取可视大小
                     // const pSize = getSize(getParent(option.target));
                     // 取元素实际大小(包括滚动宽高度)
                     const pSize = { width: item[1].scrollWidth, height: item[1].scrollHeight };
                     const size = getSize(option.target);
-                    const setX = snapDirection !== 'y';
-                    const setY = snapDirection !== 'x';
+                    const setX = orient !== 'y';
+                    const setY = orient !== 'x';
                     if (setX) {
-                        if (option.x < snapThreshold) {
+                        if (option.x < threshold) {
                             option.x = 0;
                         }
-                        else if (pSize.width - option.x - size.width < snapThreshold) {
+                        else if (pSize.width - option.x - size.width < threshold) {
                             option.x = pSize.width - size.width;
                         }
                     }
                     if (setY) {
-                        if (option.y < snapThreshold) {
+                        if (option.y < threshold) {
                             option.y = 0;
                         }
-                        else if (pSize.height - option.y - size.height < snapThreshold) {
+                        else if (pSize.height - option.y - size.height < threshold) {
                             option.y = pSize.height - size.height;
                         }
                     }
                 })
                 .on('touchEnd', (option, ins) => {
-                    if (!ins.status) return;
-                    if (!ins.option.forceSnap) return;
+                    if (!(ins.status && getEnableStatus(ins.option.snapOptions))) return;
+                    const pluginOption = ins.option.snapOptions!;
+                    if (!pluginOption.forceSnap) return;
                     // 确定方向, 默认为 x 方向
-                    let direction = ins.option.forceSnapDirection || 'x';
+                    let direction = pluginOption.forceSnapOrient || 'x';
                     // 确定要调整的字段
                     const field = xDirection.includes(direction) ? 'x' : 'y';
                     // 确定获取宽度或高度的字段(根据方向判断)

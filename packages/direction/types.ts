@@ -1,7 +1,9 @@
 export interface DirectionOption {
+    /** 是否启用 */
+    enable?: boolean;
     /**
      * 设定拖拽方向
-     * @default horizontal
+     * @default x
      */
-    direction?: 'horizontal' | 'vertical';
+    orient?: 'x' | 'y';
 }

@@ -28,16 +28,22 @@ export function vDragsFunc(option: VDragCoreOption) {
 
 export interface Binding {
     value: BindingValue;
-    modifiers: Pick<
-        DragCoreOption,
-        | 'virtualAxis'
-        | 'boundaryLimit'
-        | 'snap'
-        | 'forceSnap'
-        | 'autoScrollAtEdge'
-        | 'shadowFollow'
-        | 'shadowFollowFixed'
-    >;
+    modifiers: {
+        /** 拖拽时只应用虚拟坐标, 元素坐标不更新 */
+        virtualAxis?: boolean;
+        /** 是否限制范围 */
+        boundaryLimit?: boolean;
+        /** 是否吸边 */
+        snap?: boolean;
+        /** 是否强制吸边 */
+        forceSnap?: boolean;
+        /** 靠近滚动条边缘时, 是否自动滚动 */
+        scrolling?: boolean;
+        /** 是否需要虚影跟随 */
+        shadowFollow?: boolean;
+        /** 虚影跟随时, 是否使用固定定位 */
+        shadowFollowFixed?: boolean;
+    };
 }
 export type BindingValue = DOM | VDragCoreOption;
 export interface VDragCoreOption extends Omit<DragCoreOption, 'disabled'> {
@@ -52,7 +58,7 @@ export interface VDragCoreOption extends Omit<DragCoreOption, 'disabled'> {
  * @param {boolean} [modifiers.boundaryLimit] 元素拖动不能超出范围
  * @param {boolean} [modifiers.snap] 是否开启边缘吸附效果, 未开启时, 吸边相关配置项皆不生效
  * @param {boolean} [modifiers.forceSnap] 是否强制边缘吸附效果
- * @param {boolean} [modifiers.autoScrollAtEdge] 存在滚动条时, 靠近边缘自动触发滚动效果
+ * @param {boolean} [modifiers.scrolling] 存在滚动条时, 靠近边缘自动触发滚动效果
  * @param {boolean} [modifiers.shadowFollow] 是否克隆元素并跟随鼠标移动
  * @param {boolean} [modifiers.shadowFollowFixed] 是否为固定定位元素
  *
@@ -67,7 +73,10 @@ export interface VDragCoreOption extends Omit<DragCoreOption, 'disabled'> {
 export const draggable = {
     /** 获取拖拽所需的参数 */
     getOptions(binding: Binding, el: HTMLElement) {
-        const params: VDragCoreOption = { target: el, handle: el, ...binding.modifiers };
+        const params: VDragCoreOption = { target: el, handle: el };
+        Object.keys(binding.modifiers).forEach((k) => {
+            setOptionByAttr[k as keyof typeof setOptionByAttr] ? setOptionByAttr[k as keyof typeof setOptionByAttr](params) : params[k as 'virtualAxis'] = true;
+        });
         if (binding.value) {
             if (isObject(binding.value)) {
                 const { target, handle, ...args } = binding.value as Exclude<typeof binding.value, DOM>;
@@ -126,5 +135,28 @@ export const draggable = {
     /** vue2.0+ 自定义指令 */
     unbind(el: HTMLElement) {
         return draggable.beforeUnmount(el);
+    },
+};
+
+const setOptionByAttr = {
+    boundaryLimit: (obj: Record<string, any>) => {
+        if (!obj.boundaryLimitOptions) obj.boundaryLimitOptions = {};
+    },
+    snap: (obj: Record<string, any>) => {
+        if (!obj.snapOptions) obj.snapOptions = {};
+    },
+    forceSnap: (obj: Record<string, any>) => {
+        if (!obj.snapOptions) obj.snapOptions = {};
+        obj.snapOptions.forceSnap = true;
+    },
+    scrolling: (obj: Record<string, any>) => {
+        if (!obj.scrollingOptions) obj.scrollingOptions = {};
+    },
+    shadowFollow: (obj: Record<string, any>) => {
+        if (!obj.shadowFollowOptions) obj.shadowFollowOptions = {};
+    },
+    shadowFollowFixed: (obj: Record<string, any>) => {
+        if (!obj.shadowFollowOptions) obj.shadowFollowOptions = {};
+        obj.shadowFollowOptions.fixed = true;
     },
 };

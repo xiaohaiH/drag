@@ -1,4 +1,5 @@
 import { PluginSortLevel } from '../../src/config';
+import { getEnableStatus } from '../../src/utils/index';
 import type { PluginOption } from '../core/types';
 
 /**
@@ -10,9 +11,10 @@ export function Direction(): PluginOption {
         sort: PluginSortLevel.sky + 10,
         install(ins) {
             ins.on('axisBeforeUpdate', (option, ins) => {
-                if (!(ins.status && ins.option.direction)) return;
-                if (ins.option.direction === 'horizontal') option.y = option.initialY;
-                else if (ins.option.direction === 'vertical') option.x = option.initialX;
+                if (!(ins.status && getEnableStatus(ins.option.directionOptions))) return;
+                const pluginOption = ins.option.directionOptions!;
+                if (pluginOption.orient === 'y') option.x = option.initialX;
+                else option.y = option.initialY;
             });
         },
     };

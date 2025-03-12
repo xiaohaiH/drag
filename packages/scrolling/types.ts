@@ -1,21 +1,23 @@
+import type { EventOption } from '../core/types';
+
 export interface ScrollingOption {
-    /** 存在滚动条时, 靠近边缘自动触发滚动效果 */
-    autoScrollAtEdge?: boolean;
+    /** 是否启用 */
+    enable?: boolean;
     /**
      * 滚动容器
      * @default 默认取元素的父级定位元素
      */
-    scrollContainer?: HTMLElement;
+    container?: HTMLElement | ((opt: EventOption) => HTMLElement);
     /**
      * 靠近边缘时触发滚动的阈值
      * @default 20
      */
-    scrollThreshold?: number;
+    threshold?: number;
     /**
      * 滚动速度
      * @default 10
      */
-    scrollSpeed?: number;
+    speed?: number;
     /**
      * 执行滚动的定时器时长
      * @default 100

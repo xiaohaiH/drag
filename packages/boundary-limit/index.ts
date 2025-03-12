@@ -1,5 +1,6 @@
 import { PluginSortLevel } from '../../src/config';
 import { getParent, getSize } from '../../src/utils/assist';
+import { getEnableStatus } from '../../src/utils/index';
 import type { PluginOption } from '../core/types';
 
 /**
@@ -19,8 +20,9 @@ export function BoundaryLimit(): PluginOption {
                 item[1].scrollHeight = rect.scrollHeight;
             });
             ins.on('axisBeforeUpdate', (option, ins) => {
-                if (!ins.status) return;
-                if (!ins.option.boundaryLimit) return;
+                if (!(ins.status && getEnableStatus(ins.option.boundaryLimitOptions))) return;
+                const pluginOption = ins.option.boundaryLimitOptions!;
+                if (pluginOption.boundaryLimit === false) return;
                 const item = cacheInfo.find((v) => v[0] === option.target);
                 if (!item) return;
                 const { scrollWidth, scrollHeight } = item[1];

@@ -1,5 +1,6 @@
 import { PluginSortLevel } from '../../src/config';
 import { addElementClass, getBoundingClientRect, getElementStyle, getParent, getSize } from '../../src/utils/assist';
+import { getEnableStatus } from '../../src/utils/index';
 import type { EventOption, PluginOption } from '../core/types';
 import type { InsetShadowFollowOption, ShadowFollowOption } from './types';
 
@@ -14,18 +15,14 @@ export function ShadowFollow(): PluginOption {
         sort: PluginSortLevel.thermosphere,
         install(ins) {
             ins.on('touchStart', (option, ins) => {
-                if (!(ins.status && ins.option.shadowFollow)) return;
+                if (!(ins.status && getEnableStatus(ins.option.shadowFollowOptions))) return;
+                const pluginOption = ins.option.shadowFollowOptions!;
                 const item = cacheInfo.find((v) => v[0] === option.target);
                 if (item) return;
-                const _opt = {
-                    createShadowFollowDom,
-                    shadowFollowAppend,
-                    setShadowFollowDom,
-                    ...ins.option,
-                } as InsetShadowFollowOption;
-                const cloneDom = _opt.createShadowFollowDom(_opt, option) as HTMLElement;
+                const _opt = { createDom, append, setDomAttrs, ...pluginOption } as InsetShadowFollowOption;
+                const cloneDom = _opt.createDom(_opt, option) as HTMLElement;
                 const initialAxis = { x: 0, y: 0 };
-                if (ins.option.shadowFollowFixed) {
+                if (pluginOption.fixed) {
                     const rect = getBoundingClientRect(option.target, 'offset');
                     initialAxis.x = rect.x;
                     initialAxis.y = rect.y;
@@ -45,9 +42,9 @@ export function ShadowFollow(): PluginOption {
                         y: option.target.offsetTop,
                     });
                 }
-                _opt.shadowFollowAppend(cloneDom, option);
+                _opt.append(cloneDom, option);
                 // 非固定定位时克隆元素与拖拽对象的父级不同时, 需调整坐标
-                if (!ins.option.shadowFollowFixed && cloneDom.parentElement !== option.target.parentElement) {
+                if (!pluginOption.fixed && cloneDom.parentElement !== option.target.parentElement) {
                     const rawAxis = getBoundingClientRect(option.target, 'offset');
                     const newAxis = getBoundingClientRect(cloneDom, 'offset');
                     if (newAxis.x !== rawAxis.x) {
@@ -62,14 +59,14 @@ export function ShadowFollow(): PluginOption {
                 cacheInfo.push([option.target, { dom: cloneDom, x: initialAxis.x, y: initialAxis.y }]);
 
                 /** 创建节点 */
-                function createShadowFollowDom(opt: InsetShadowFollowOption) {
+                function createDom(opt: InsetShadowFollowOption) {
                     const dom = option.target.cloneNode(true) as HTMLElement;
-                    opt.setShadowFollowDom(dom, opt, option);
+                    opt.setDomAttrs(dom, opt, option);
                     return dom;
                 }
             })
                 .on('axisBeforeUpdate', (option, ins) => {
-                    if (!(ins.status && ins.option.shadowFollow)) return;
+                    if (!(ins.status && getEnableStatus(ins.option.shadowFollowOptions))) return;
                     const item = cacheInfo.find((v) => v[0] === option.target);
                     if (!item) return;
                     item[1].dom.style.left = `${option.x + item[1].x - option.ml}px`;
@@ -86,21 +83,21 @@ export function ShadowFollow(): PluginOption {
 }
 
 /** 将节点添加到页面中 */
-function shadowFollowAppend(dom: HTMLElement | Node, opt: EventOption) {
+function append(dom: HTMLElement | Node, opt: EventOption) {
     opt.target.parentElement?.appendChild(dom);
 }
 /** 设置默认样式 */
-function setShadowFollowDom(dom: HTMLElement | Node, option: InsetShadowFollowOption, opt: EventOption) {
+function setDomAttrs(dom: HTMLElement | Node, option: InsetShadowFollowOption, opt: EventOption) {
     const isBorderBox = getElementStyle(opt.target).boxSizing === 'border-box';
     const width = isBorderBox ? opt.target.offsetWidth : opt.target.clientWidth;
     const height = isBorderBox ? opt.target.offsetHeight : opt.target.clientHeight;
     Object.assign((dom as HTMLElement).style, {
         opacity: '0.5',
         pointerEvents: 'none',
-        position: option.shadowFollowFixed ? 'fixed' : 'absolute',
+        position: option.fixed ? 'fixed' : 'absolute',
         width: `${width}px`,
         height: `${height}px`,
     });
-    addElementClass(dom as HTMLElement, option.shadowFollowDomClass);
-    option.shadowFollowDomStyle && Object.assign((dom as HTMLElement).style, option.shadowFollowDomStyle);
+    addElementClass(dom as HTMLElement, option.class);
+    option.style && Object.assign((dom as HTMLElement).style, option.style);
 }
