@@ -1,5 +1,5 @@
 <template>
-    <div class="size-full flex  origin-lt">
+    <div class="size-full flex origin-lt">
         <Directive class="w-50%" />
         <div class="bg-gray w-1px" />
         <Function class="w-50%  origin-lt" />

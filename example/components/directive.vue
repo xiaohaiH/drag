@@ -22,14 +22,14 @@
                     <div>内容2</div>
                 </div>
                 <div
-                    v-draggable.boundaryLimit="{ direction: 'horizontal', classActive: 'z-999' }"
+                    v-draggable.boundaryLimit="{ directionOptions: { orient: 'x' }, classActive: 'z-999' }"
                     class="box absolute cursor-move bg-amber z-1 b-1 b-solid left-10% top-55%"
                 >
                     <div>只能水平移动</div>
                     <div>不出盒子范围</div>
                 </div>
                 <div
-                    v-draggable="{ direction: 'vertical', classActive: 'z-999' }"
+                    v-draggable="{ directionOptions: { orient: 'y' }, classActive: 'z-999' }"
                     class="box absolute cursor-move bg-amber z-1 b-1 b-solid left-50% top-60%"
                 >
                     <div>只能垂直移动</div>
@@ -44,7 +44,7 @@
                 <div>内容2</div>
             </div>
             <div class="wrap relative size-49% bg-#87ceeb overflow-auto">
-                <div v-draggable="draggableOption2" class="box cursor-move bg-amber absolute b-1 b-solid">
+                <div v-draggable.boundaryLimit.scrolling="draggableOption2" class="box cursor-move bg-amber absolute b-1 b-solid">
                     <div>任意位置</div>
                     <div>内容2</div>
                     <div
@@ -78,7 +78,6 @@ const draggableOption = {
 };
 const draggableOption2 = ref({
     disabled: false,
-    autoScrollAtEdge: true,
     classActive: 'z-999',
 });
 </script>
