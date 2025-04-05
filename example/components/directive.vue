@@ -1,8 +1,20 @@
 <template>
     <div class="flex flex-col px-10px">
-        <div>指令形式</div>
+        <div>
+            <span>指令形式</span>
+            <button class="ml-10px" @click="count++">
+                新增拖拽元素
+            </button>
+        </div>
         <div class="b-1 b-t-solid my-4px" />
         <div class="size-full relative flex justify-between ws-nowrap">
+            <div v-draggable="draggableOption3" class="event-proxy">
+                <template v-for="item of count" :key="item">
+                    <div class="box2 absolute w-120px bg-amber z-1 b-1 b-solid right-0 top-0">
+                        新增元素 - {{ item }}
+                    </div>
+                </template>
+            </div>
             <div class="wrap relative size-49% bg-#87ceeb overflow-auto">
                 <div
                     v-draggable.boundaryLimit="{ classActive: 'z-999' }"
@@ -79,6 +91,13 @@ const draggableOption = {
 const draggableOption2 = ref({
     disabled: false,
     classActive: 'z-999',
+});
+const count = ref(0);
+const draggableOption3 = ref({
+    disabled: false,
+    classActive: 'z-999',
+    eventProxy: '.event-proxy',
+    target: (val: HTMLElement | Document) => val.querySelectorAll('.box2'),
 });
 </script>
 

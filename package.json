@@ -1,7 +1,7 @@
 {
     "name": "@xiaohaih/drag",
     "type": "module",
-    "version": "1.0.0-beta.2",
+    "version": "1.0.0-beta.3",
     "description": "拖拽插件, 可通过指令或函数调用来拖拽元素移动",
     "keywords": [
         "vue-drag",

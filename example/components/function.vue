@@ -1,9 +1,19 @@
 <template>
     <div class="flex flex-col px-10px">
-        <div>函数形式</div>
+        <div>
+            <span>函数形式</span>
+            <button class="ml-10px" @click="count++">
+                新增拖拽元素
+            </button>
+        </div>
         <div class="b-1 b-t-solid my-4px" />
         <div class="size-full relative flex justify-between ws-nowrap">
             <div class="wrap relative size-49% bg-#87ceeb overflow-auto">
+                <template v-for="item of count" :key="item">
+                    <div class="box absolute bg-amber z-1 b-1 b-solid left-10% top-60%">
+                        新增元素 - {{ item }}
+                    </div>
+                </template>
                 <div class="box absolute bg-amber z-1 b-1 b-solid op-50">
                     不能出盒子范围
                 </div>
@@ -52,19 +62,22 @@
 </template>
 
 <script lang="ts" setup>
-import { defineComponent, getCurrentInstance, onBeforeMount, onMounted, unref } from 'vue';
+import { defineComponent, getCurrentInstance, onBeforeMount, onMounted, ref, unref } from 'vue';
 import { drag } from '@/index';
 
 const currentInstance = getCurrentInstance();
 
+const count = ref(0);
 let zIndex = 10;
 // function setZIndex(option: DragOption) {
 //     // unref(option.target).style.zIndex = (++zIndex).toString();
 // }
 onMounted(() => {
     const ins = drag({
-        target: currentInstance!.proxy!.$el.querySelectorAll('.box'),
-        // handle: currentInstance!.proxy!.$el.querySelectorAll('.box')[0].querySelector('.handle'),
+        eventProxy: currentInstance!.proxy!.$el,
+        // target: currentInstance!.proxy!.$el.querySelectorAll('.box'),
+        target: (val) => val.querySelectorAll('.box'),
+        // handle: () => currentInstance!.proxy!.$el.querySelectorAll('.box')[0].querySelector('.handle'),
         // handle: (val) => val.querySelectorAll('.handle'),
         // directionOptions: {
         //     orient: 'x',

@@ -15,5 +15,8 @@ export default defineConfig(
             build: {
                 outDir: 'dist2',
             },
+            server: {
+                port: 3030,
+            },
         }) satisfies UserConfig,
 );
