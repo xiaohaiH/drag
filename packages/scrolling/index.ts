@@ -90,7 +90,7 @@ export function Scrolling(): PluginOption {
                 clearInterval(timer);
             }
             ins
-                .on('touchStart', (option, ins) => {
+                .on('start', (option, ins) => {
                     if (!(ins.status && getEnableStatus(ins.option.scrollingOptions))) return;
                     const { container } = ins.option.scrollingOptions!;
                     const scrollContainer = typeof container === 'function' ? container(option) : container || getParent(option.target);
@@ -99,8 +99,8 @@ export function Scrolling(): PluginOption {
                     Object.assign(item[1], { clientX: option.clientX, clientY: option.clientY, x: scrollContainer.scrollLeft, y: scrollContainer.scrollTop, scrollContainerRect: scrollContainer.getBoundingClientRect(), scrollContainer });
                     pollingDetection(option, ins);
                 })
-                .on('touchMove', pollingDetection)
-                .on('touchEnd', (option) => {
+                .on('move', pollingDetection)
+                .on('end', (option) => {
                     stopPollingDetection();
                     const item = cacheInfo.find((v) => v[0] === option.target);
                     item && Object.assign(item[1], { clientX: 0, clientY: 0, x: 0, y: 0 });

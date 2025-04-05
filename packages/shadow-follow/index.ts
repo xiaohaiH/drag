@@ -14,7 +14,7 @@ export function ShadowFollow(): PluginOption {
         name: 'ShadowFollow',
         sort: PluginSortLevel.thermosphere,
         install(ins) {
-            ins.on('touchStart', (option, ins) => {
+            ins.on('start', (option, ins) => {
                 if (!(ins.status && getEnableStatus(ins.option.shadowFollowOptions))) return;
                 const pluginOption = ins.option.shadowFollowOptions!;
                 const item = cacheInfo.find((v) => v[0] === option.target);
@@ -74,7 +74,7 @@ export function ShadowFollow(): PluginOption {
                     item[1].dom.style.left = `${option.x + item[1].x - option.ml}px`;
                     item[1].dom.style.top = `${option.y + item[1].y - option.mt}px`;
                 })
-                .on('touchEnd', (option, ins) => {
+                .on('end', (option, ins) => {
                     const idx = cacheInfo.findIndex((v) => v[0] === option.target);
                     if (idx === -1) return;
                     const [item] = cacheInfo.splice(idx, 1);

@@ -18,6 +18,8 @@ export interface DragCoreOption {
     scrollingOptions?: ScrollingOption;
     /** 虚影跟随配置项 */
     shadowFollowOptions?: ShadowFollowOption;
+    /** 事件代理 - 当拖拽元素懒加载或会动态更新时, 可将事件挂载到其祖先上 */
+    eventProxy?: DOM;
     /** 拖拽元素 */
     target?: DOM;
     /** 拖拽元素句柄, 不传取拖拽元素本身 */
@@ -82,17 +84,17 @@ export interface DragCoreOption {
 /** 元素拖拽的事件 */
 export interface DragCoreEvents {
     /** 开始拖拽前触发 */
-    touchStart: (option: EventOption, ins: DragCore) => void;
+    beforeStart: (option: EventOption, ins: DragCore) => void;
     /** 开始拖拽后触发 */
-    touchStarted: (option: EventOption, ins: DragCore) => void;
+    start: (option: EventOption, ins: DragCore) => void;
     /** 开始移动前触发 */
-    touchMove: (option: EventOption, ins: DragCore) => void;
+    beforeMove: (option: EventOption, ins: DragCore) => void;
     /** 开始移动后触发 */
-    touchMoved: (option: EventOption, ins: DragCore) => void;
+    move: (option: EventOption, ins: DragCore) => void;
     /** 结束拖拽前触发 */
-    touchEnd: (option: EventOption, ins: DragCore) => void;
+    beforeEnd: (option: EventOption, ins: DragCore) => void;
     /** 结束拖拽后触发 */
-    touchEnded: (option: EventOption, ins: DragCore) => void;
+    end: (option: EventOption, ins: DragCore) => void;
     /** 坐标更新前的回调事件 - 可直接修改坐标值来覆盖实际坐标(不支持异步修改) */
     axisBeforeUpdate: (option: Omit<EventOption, 'native'>, ins: DragCore) => void;
     /** 坐标更新后的回调事件 */
@@ -109,7 +111,7 @@ export interface EventOption {
     /** 是否处于拖拽中 */
     dragging: boolean;
     /** 事件对象 */
-    native: TouchEvent | MouseEvent;
+    native?: TouchEvent | MouseEvent;
     /** 鼠标坐标值 x */
     clientX: number;
     /** 鼠标坐标值 y */

@@ -6,8 +6,8 @@ import { getMobilePlatStatus } from './index';
  * @param {DOM} val 待解析的参数
  * @param {HTMLElement} parent 为字符串时, 限制查找的父节点
  */
-export function parseDOM(val: DOM | undefined | null, parent: HTMLElement | Document): HTMLElement[] | undefined {
-    if (val === null || val === undefined) return;
+export function parseDOM<T extends HTMLElement[] | undefined>(val: DOM | undefined | null, parent: HTMLElement | Document, def?: T): HTMLElement[] | T {
+    if (val === null || val === undefined) return def as [];
     if (typeof val === 'string') {
         return parseDOM(parent.querySelectorAll(val), parent);
     }
@@ -28,6 +28,7 @@ export function parseDOM(val: DOM | undefined | null, parent: HTMLElement | Docu
         // @ts-expect-error 拓展运算符报错
         return [...(val as NodeListOf<HTMLElement>)];
     }
+    return def as [];
 }
 
 /** 获取事件的坐标信息 */
@@ -40,6 +41,17 @@ export function getEvent(ev: TouchEvent | MouseEvent): Touch | MouseEvent {
 /** 获取 dom 的定位父级 */
 export function getParent(dom: HTMLElement): HTMLElement {
     return (dom.offsetParent as HTMLElement) || document.body || document.documentElement;
+}
+
+/** 匹配 dom 树中的某个元素 */
+export function matchForDomTree(dom: HTMLElement, matchDom: HTMLElement, breakDom?: HTMLElement): HTMLElement | null {
+    let _dom: HTMLElement | null = dom;
+    while (_dom) {
+        if (_dom === matchDom) return _dom;
+        if (_dom === breakDom) return null;
+        _dom = _dom.parentElement;
+    }
+    return null;
 }
 
 /** 获取 dom 的大小 */

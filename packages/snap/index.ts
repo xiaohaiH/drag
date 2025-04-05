@@ -21,7 +21,7 @@ export function Snap(): PluginOption {
         sort: PluginSortLevel.sky + 20,
         install(ins) {
             let cacheInfo: [HTMLElement, Record<'scrollWidth' | 'scrollHeight', number>][] = [];
-            ins.on('touchStart', (option) => {
+            ins.on('start', (option) => {
                 let item = cacheInfo.find((v) => v[0] === option.target);
                 if (!item) cacheInfo.push((item = [option.target, { scrollWidth: 0, scrollHeight: 0 }]));
                 const rect = getParent(option.target);
@@ -59,7 +59,7 @@ export function Snap(): PluginOption {
                         }
                     }
                 })
-                .on('touchEnd', (option, ins) => {
+                .on('end', (option, ins) => {
                     if (!(ins.status && getEnableStatus(ins.option.snapOptions))) return;
                     const pluginOption = ins.option.snapOptions!;
                     if (!pluginOption.forceSnap) return;

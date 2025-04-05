@@ -21,7 +21,6 @@ export function vDragsFunc(option: VDragCoreOption) {
         dragIns.value?.destroyed();
         dragIns.value = null;
     }
-    init();
     watch(() => [option.target, option.handle, option.disabled], init, { immediate: true });
     return { init, destroy, dragIns };
 }
@@ -73,7 +72,7 @@ export interface VDragCoreOption extends Omit<DragCoreOption, 'disabled'> {
 export const draggable = {
     /** 获取拖拽所需的参数 */
     getOptions(binding: Binding, el: HTMLElement) {
-        const params: VDragCoreOption = { target: el, handle: el };
+        const params: VDragCoreOption = { target: el };
         Object.keys(binding.modifiers).forEach((k) => {
             setOptionByAttr[k as keyof typeof setOptionByAttr] ? setOptionByAttr[k as keyof typeof setOptionByAttr](params) : params[k as 'virtualAxis'] = true;
         });

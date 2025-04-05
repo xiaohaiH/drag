@@ -12,7 +12,7 @@ export function BoundaryLimit(): PluginOption {
         sort: PluginSortLevel.sky + 30,
         install(ins) {
             let cacheInfo: [HTMLElement, Record<'scrollWidth' | 'scrollHeight', number>][] = [];
-            ins.on('touchStart', (option) => {
+            ins.on('start', (option) => {
                 let item = cacheInfo.find((v) => v[0] === option.target);
                 if (!item) cacheInfo.push((item = [option.target, { scrollWidth: 0, scrollHeight: 0 }]));
                 const rect = getParent(option.target);

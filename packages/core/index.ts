@@ -7,12 +7,25 @@ import {
     getEvent,
     getParent,
     isMobile,
+    matchForDomTree,
     moveEventName,
     parseDOM,
     removeElementClass,
     upEventName,
 } from '../../src/utils/assist';
 import type { DragCoreEvents, DragCoreEventsNames, DragCoreOption, EventOption, PluginOption } from './types';
+
+/** 事件坐标 */
+export interface Axis {
+    /** 鼠标坐标 */
+    x: number;
+    /** 鼠标坐标 */
+    y: number;
+    /** 按下时鼠标距离节点原点的距离 + 父节点距离屏幕原点的距离(会加上滚动距离) */
+    pageX: number;
+    /** 按下时鼠标距离节点原点的距离 + 父节点距离屏幕原点的距离(会加上滚动距离) */
+    pageY: number;
+}
 
 /** 元素拖拽 */
 export class DragCore {
@@ -33,9 +46,11 @@ export class DragCore {
     ratio: [widthRatio: number, heightRatio: number] = [1, 1];
 
     constructor(option?: DragCoreOption) {
+        this.addEventListenerForBrokerDom = this.addEventListenerForBrokerDom.bind(this);
         this.touchstart = this.touchstart.bind(this);
-        this.touchmove = this.touchmove.bind(this);
-        this.touchend = this.touchend.bind(this);
+        this.down = this.down.bind(this);
+        this.move = this.move.bind(this);
+        this.up = this.up.bind(this);
         this.mouseenter = this.mouseenter.bind(this);
         this.mouseleave = this.mouseleave.bind(this);
         this.setPosition = this.setPosition.bind(this);
@@ -44,14 +59,14 @@ export class DragCore {
         this.off = this.off.bind(this);
         this.emit = this.emit.bind(this);
 
-        option && Object.assign(this.option, option);
         this.option.disabled && (this.status = false);
-        this.option.target && this.formatDom();
+        option && this.updateOption(option);
     }
 
     /** 更新参数 */
     updateOption(option: Partial<Omit<DragCoreOption, 'disabled'>>) {
         Object.assign(this.option, option);
+        option.eventProxy && this.formatBrokerDom();
         (option.target || (this.option.target && option.handle)) && this.formatDom();
         return this;
     }
@@ -73,12 +88,38 @@ export class DragCore {
         return this;
     }
 
+    brokerDoms: HTMLElement[] = [];
+    /** 格式化代理元素 */
+    formatBrokerDom() {
+        this.removeEventListenerForBrokerDoms();
+        const { eventProxy } = this.option;
+        this.brokerDoms = parseDOM(eventProxy, document) || [];
+        this.addEventListenerForBrokerDoms();
+    }
+
+    /** 增加代理元素监听的相关事件 */
+    addEventListenerForBrokerDoms() {
+        this.brokerDoms.forEach((o) => {
+            // eslint-disable-next-line ts/unbound-method
+            o.addEventListener(downEventName, this.addEventListenerForBrokerDom);
+        });
+    }
+
+    /** 移除代理元素监听的相关事件 */
+    removeEventListenerForBrokerDoms() {
+        this.brokerDoms.forEach((o) => {
+        // eslint-disable-next-line ts/unbound-method
+            o.removeEventListener(downEventName, this.addEventListenerForBrokerDom);
+        });
+    }
+
     /** 格式化拖拽元素 */
     formatDom() {
         const { target, handle } = this.option;
         this.removeEventsListener();
         this.operationDom = [];
-        const doms = parseDOM(target, document) || [];
+        // eslint-disable-next-line no-sequences
+        const doms = this.brokerDoms.length ? this.brokerDoms.reduce((p, v) => (p.push(...parseDOM(target, v, [])), p), [] as HTMLElement[]) : parseDOM(target, document, []);
         doms.forEach((targetDom) => {
             const handleDoms = parseDOM(handle, targetDom) || [targetDom];
             handleDoms.forEach((handleDom) =>
@@ -114,7 +155,7 @@ export class DragCore {
     /** 移除元素监听的相关事件 */
     removeEventsListener() {
         this.operationDom.forEach((info) => {
-            info.dragging && this.touchend(info, {} as MouseEvent);
+            info.dragging && this.up(info, {} as MouseEvent);
             // eslint-disable-next-line ts/unbound-method
             info.handle.removeEventListener(downEventName, this.touchstart);
             // eslint-disable-next-line ts/unbound-method
@@ -124,16 +165,39 @@ export class DragCore {
         });
     }
 
+    /** 代理元素的按下事件 */
+    addEventListenerForBrokerDom(ev: TouchEvent | MouseEvent) {
+        const { target } = this.option;
+        const { operationDom } = this;
+        if (!target) return;
+        const status = parseDOM(target, ev.currentTarget as HTMLElement, []).every((o, i) => o === operationDom[i]?.target);
+        // const status = parseDOM(target, ev.currentTarget as HTMLElement, []).every((o) => operationDom.find((oo) => o === oo.target));
+        if (status) return;
+        this.formatDom();
+        const info = this.operationDom.find((v) => matchForDomTree(ev.target as HTMLElement, v.target, ev.currentTarget as HTMLElement));
+        if (!info) return;
+        const { clientX, clientY, pageX, pageY } = getEvent(ev);
+        this.down(info, { x: clientX, y: clientY, pageX, pageY }, ev);
+    }
+
     _cursorTouch = '';
     isTouching = false;
-    /** 开始拖拽 */
+    /** 开始拖拽 - 基于事件 */
     touchstart(ev: TouchEvent | MouseEvent) {
         const info = this.operationDom.find((v) => v.handle === ev.currentTarget);
         if (!info) return;
+        const { clientX, clientY, pageX, pageY } = getEvent(ev);
+        this.down(info, { x: clientX, y: clientY, pageX, pageY }, ev);
+    }
+
+    /** 拖拽开始 */
+    down(info: Omit<EventOption, 'native'>, axis: Axis, ev?: MouseEvent | TouchEvent) {
+        ev?.preventDefault();
+
         this.isTouching = true;
+        this.emit('beforeStart', this.getCustomEvent(info, ev), this);
         this._cursorTouch = this.isEntering ? this._cursor : document.body.style.cursor;
         this.option.setCursor(this.option.getCursor('down', info, this, getCursor));
-        const { clientX, clientY, pageX, pageY } = getEvent(ev);
         const { position, marginLeft, marginTop } = getElementStyle(info.target);
         // 未使用绝对定位或固定定位时, 不能取 offset 相关的属性
         const isAbsolute = position === 'absolute' || position === 'fixed';
@@ -145,74 +209,71 @@ export class DragCore {
         const [widthRatio, heightRatio] = this.ratio;
 
         info.dragging = true;
-        info.clientX = clientX;
-        info.clientY = clientY;
-        info.pageX = pageX;
-        info.pageY = pageY;
+        info.clientX = axis.x;
+        info.clientY = axis.y;
+        info.pageX = axis.pageX;
+        info.pageY = axis.pageY;
         // 计算出鼠标与元素的间隔
-        info.offsetX = (pageX - (left / widthRatio));
-        info.offsetY = (pageY - (top / heightRatio));
-        info.offsetInsetX = Math.abs(clientX - x);
-        info.offsetInsetY = Math.abs(clientY - y);
+        info.offsetX = (axis.pageX - (left / widthRatio));
+        info.offsetY = (axis.pageY - (top / heightRatio));
+        info.offsetInsetX = Math.abs(axis.x - x);
+        info.offsetInsetY = Math.abs(axis.y - y);
         info.initialX = left;
         info.initialY = top;
         info.ml = (marginLeft && Number.parseFloat(marginLeft)) || 0;
         info.mt = (marginTop && Number.parseFloat(marginTop)) || 0;
         info.x = left;
         info.y = top;
-        this.emit('touchStart', this.getCustomEvent(info, ev), this);
-        ev.preventDefault();
         addElementClass(info.target, this.option.classActive);
         this.option.classActivated && this.operationDom.forEach((o) => {
             o.target === info.target ? addElementClass(o.target, this.option.classActivated) : removeElementClass(o.target, this.option.classActivated);
         });
+        this.emit('start', this.getCustomEvent(info, ev), this);
 
         const move = (ev: TouchEvent | MouseEvent) => {
-            this.touchmove(info, ev);
+            const { clientX, clientY, pageX, pageY } = getEvent(ev);
+            this.move(info, { x: clientX, y: clientY, pageX, pageY }, ev);
         };
         const end = (ev: TouchEvent | MouseEvent) => {
-            this.touchend(info, ev);
+            const { clientX, clientY, pageX, pageY } = getEvent(ev);
+            this.up(info, { x: clientX, y: clientY, pageX, pageY }, ev);
             window.removeEventListener(moveEventName, move);
             window.removeEventListener(upEventName, end);
         };
         window.addEventListener(moveEventName, move, { passive: false });
         window.addEventListener(upEventName, end, { passive: false });
-        this.emit('touchStarted', this.getCustomEvent(info, ev), this);
     }
 
     /** 拖拽中 */
-    touchmove(info: Omit<EventOption, 'native'>, ev: TouchEvent | MouseEvent) {
+    move(info: Omit<EventOption, 'native'>, axis: Axis, ev?: MouseEvent | TouchEvent) {
         if (!this.status) return;
+        ev?.preventDefault();
+        ev?.stopImmediatePropagation();
+        this.emit('beforeMove', this.getCustomEvent(info, ev), this);
         addElementClass(info.target, this.option.classMoving);
         this.option.setCursor(this.option.getCursor('moving', info, this, getCursor));
         const [widthRatio, heightRatio] = this.ratio;
-        const { clientX, clientY, pageX, pageY } = getEvent(ev);
-        info.clientX = clientX;
-        info.clientY = clientY;
-        info.pageX = pageX;
-        info.pageY = pageY;
-        info.x = (pageX - info.offsetX) * widthRatio;
-        info.y = (pageY - info.offsetY) * heightRatio;
-        this.emit('touchMove', this.getCustomEvent(info, ev), this);
-        ev.preventDefault();
-        ev.stopImmediatePropagation();
-
+        info.clientX = axis.x;
+        info.clientY = axis.y;
+        info.pageX = axis.pageX;
+        info.pageY = axis.pageY;
+        info.x = (axis.pageX - info.offsetX) * widthRatio;
+        info.y = (axis.pageY - info.offsetY) * heightRatio;
         this.setPosition(info, info.target);
-        this.emit('touchMoved', this.getCustomEvent(info, ev), this);
+        this.emit('move', this.getCustomEvent(info, ev), this);
     }
 
     /** 拖拽结束 */
-    touchend(info: Omit<EventOption, 'native'>, ev: TouchEvent | MouseEvent) {
+    up(info: Omit<EventOption, 'native'>, axis: Axis, ev?: MouseEvent | TouchEvent) {
         if (!this.status) return;
-
+        this.emit('beforeEnd', this.getCustomEvent(info, ev), this);
         removeElementClass(info.target, this.option.classActive);
         removeElementClass(info.target, this.option.classMoving);
         this.isTouching = false;
         const t = this.isEntering ? 'over' : 'up';
         this.option.setCursor(this.option.getCursor(t, info, this, getCursor) || this._cursorTouch);
         info.dragging = false;
-        this.emit('touchEnd', this.getCustomEvent(info, ev), this);
-        this.emit('touchEnded', this.getCustomEvent(info, ev), this);
+        this.emit('end', this.getCustomEvent(info, ev), this);
     }
 
     /** 设置坐标 */
@@ -246,7 +307,7 @@ export class DragCore {
     }
 
     /** 获取事件传递的信息 */
-    getCustomEvent(info: this['operationDom'][number], ev: TouchEvent | MouseEvent) {
+    getCustomEvent(info: this['operationDom'][number], ev?: TouchEvent | MouseEvent) {
         return { ...info, native: ev };
     }
 
